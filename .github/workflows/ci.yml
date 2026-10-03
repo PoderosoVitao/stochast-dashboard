@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: stochast-dashboard
+      - uses: actions/checkout@v4
+        with:
+          repository: PoderosoVitao/Stochast
+          path: Stochast
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+      - run: uv sync --python 3.11
+        working-directory: stochast-dashboard
+      - run: uv run ruff check .
+        working-directory: stochast-dashboard
+      - run: uv run ruff format --check .
+        working-directory: stochast-dashboard
+      - run: uv run mypy stochast_dashboard
+        working-directory: stochast-dashboard
+      - run: uv run pytest
+        working-directory: stochast-dashboard
