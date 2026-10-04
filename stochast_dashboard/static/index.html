@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Stochast Dashboard</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <h1>Stochast Dashboard</h1>
+
+  <form id="start-form">
+    <label>
+      Scenario path
+      <input name="path" required placeholder="examples/refund_agent" />
+    </label>
+    <label>
+      Adapter spec
+      <input name="adapter" required placeholder="examples/refund_agent/agent.py:build_adapter" />
+    </label>
+    <label>
+      Keyword filter
+      <input name="keyword" placeholder="(optional)" />
+    </label>
+    <label>
+      Runs override
+      <input name="runs" type="number" min="1" placeholder="(optional)" />
+    </label>
+    <label>
+      Concurrency
+      <input name="concurrency" type="number" min="1" value="5" />
+    </label>
+    <div class="buttons">
+      <button type="button" id="preview-btn">Preview</button>
+      <button type="submit" id="start-btn">Start</button>
+    </div>
+  </form>
+
+  <div id="preview"></div>
+  <div id="error" class="error"></div>
+  <div id="scenarios"></div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
