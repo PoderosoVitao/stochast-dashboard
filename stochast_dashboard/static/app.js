@@ -27,7 +27,11 @@ previewBtn.addEventListener("click", async () => {
     return;
   }
   try {
-    const scenarios = await fetchJSON(`/api/scenarios?path=${encodeURIComponent(path)}`);
+    const scenarios = await fetchJSON("/api/scenarios", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path }),
+    });
     previewEl.innerHTML =
       scenarios
         .map((s) => `<div>${s.name} — ${s.runs} runs${s.tags.length ? " [" + s.tags.join(", ") + "]" : ""}</div>`)

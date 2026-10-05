@@ -27,6 +27,10 @@ class StartRunRequest(BaseModel):
     seed: int | None = None
 
 
+class PreviewRequest(BaseModel):
+    path: str
+
+
 @app.get("/")
 def index() -> FileResponse:
     return FileResponse(STATIC_DIR / "index.html")
@@ -35,10 +39,13 @@ def index() -> FileResponse:
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
-@app.get("/api/scenarios")
-async def list_scenarios(path: str) -> list[dict[str, Any]]:
+# POST, not GET: this imports and executes arbitrary local Python as a side
+# effect, so it must require a CORS preflight (a plain GET wouldn't) to stop
+# any webpage the user has open from being able to trigger it cross-origin.
+@app.post("/api/scenarios")
+async def list_scenarios(body: PreviewRequest) -> list[dict[str, Any]]:
     try:
-        return await job.preview(Path(path))
+        return await job.preview(Path(body.path))
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
