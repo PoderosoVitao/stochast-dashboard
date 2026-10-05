@@ -7,38 +7,162 @@
   <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
-  <h1>Stochast Dashboard</h1>
+  <header class="topbar">
+    <div class="brand">Stochast <span class="brand-sub">Dashboard</span></div>
+    <span id="job-status" class="status-pill idle" aria-live="polite"><span class="status-icon" aria-hidden="true"></span><span class="status-text">Idle</span></span>
+  </header>
 
-  <form id="start-form">
-    <label>
-      Scenario path
-      <input name="path" required placeholder="examples/refund_agent" />
-    </label>
-    <label>
-      Adapter spec
-      <input name="adapter" required placeholder="examples/refund_agent/agent.py:build_adapter" />
-    </label>
-    <label>
-      Keyword filter
-      <input name="keyword" placeholder="(optional)" />
-    </label>
-    <label>
-      Runs override
-      <input name="runs" type="number" min="1" placeholder="(optional)" />
-    </label>
-    <label>
-      Concurrency
-      <input name="concurrency" type="number" min="1" value="5" />
-    </label>
-    <div class="buttons">
-      <button type="button" id="preview-btn">Preview</button>
-      <button type="submit" id="start-btn">Start</button>
+  <div class="layout">
+    <aside class="sidebar">
+      <section class="panel">
+        <h2 class="panel-title">New run</h2>
+        <form id="start-form" novalidate>
+          <div class="field">
+            <label for="path">Scenario path</label>
+            <input id="path" name="path" required autocomplete="off" placeholder="/path/to/scenarios.py" />
+            <p class="hint">A scenario file, or a folder to search for them.</p>
+          </div>
+          <div class="field">
+            <label for="adapter">Adapter</label>
+            <input id="adapter" name="adapter" required autocomplete="off" placeholder="/path/to/adapter.py:build_adapter" />
+            <p class="hint">The adapter file and its factory function, joined by a colon.</p>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="runs">Runs</label>
+              <input id="runs" name="runs" type="number" min="1" placeholder="Default" />
+            </div>
+            <div class="field">
+              <label for="concurrency">Concurrency</label>
+              <input id="concurrency" name="concurrency" type="number" min="1" value="5" />
+            </div>
+          </div>
+          <div class="field">
+            <label for="keyword">Only scenarios named</label>
+            <input id="keyword" name="keyword" autocomplete="off" placeholder="Optional, e.g. refund" />
+          </div>
+          <div id="form-error" class="alert" role="alert" hidden></div>
+          <div class="actions">
+            <button type="button" id="preview-btn" class="btn secondary">Preview</button>
+            <button type="submit" id="start-btn" class="btn primary">Start run</button>
+          </div>
+        </form>
+      </section>
+
+      <section id="preview" class="panel" hidden>
+        <h2 class="panel-title">Scenarios found</h2>
+        <ul id="preview-list" class="preview-list"></ul>
+      </section>
+    </aside>
+
+    <main class="results">
+      <div id="job-error" class="alert" role="alert" hidden></div>
+      <div id="empty-state" class="panel empty-state">
+        <h2>No run yet</h2>
+        <p>Pick a scenario and an adapter, then start a run. Results show up here as each run finishes.</p>
+      </div>
+      <div id="scenarios"></div>
+    </main>
+  </div>
+
+  <dialog id="run-dialog" class="run-dialog" aria-labelledby="run-dialog-title">
+    <div class="dialog-header">
+      <div>
+        <h2 id="run-dialog-title">Run</h2>
+        <p id="run-dialog-subtitle" class="muted"></p>
+      </div>
+      <button type="button" id="run-dialog-close" class="btn ghost" aria-label="Close">Close</button>
     </div>
-  </form>
+    <div id="run-dialog-body" class="dialog-body"></div>
+  </dialog>
 
-  <div id="preview"></div>
-  <div id="error" class="error"></div>
-  <div id="scenarios"></div>
+  <template id="scenario-template">
+    <section class="panel scenario">
+      <header class="scenario-header">
+        <div>
+          <h2 class="scenario-name"></h2>
+          <p class="scenario-progress muted"></p>
+        </div>
+        <span class="status-pill queued"><span class="status-icon" aria-hidden="true"></span><span class="status-text">Queued</span></span>
+      </header>
+      <div class="progress" role="progressbar" aria-valuemin="0" aria-valuenow="0"><div class="progress-bar"></div></div>
+
+      <div class="kpis">
+        <div class="kpi">
+          <span class="kpi-label">Pass rate</span>
+          <span class="kpi-value" data-kpi="pass-rate">–</span>
+          <span class="kpi-sub" data-kpi="pass-ci"></span>
+        </div>
+        <div class="kpi">
+          <span class="kpi-label">Passed / failed</span>
+          <span class="kpi-value" data-kpi="counts">–</span>
+          <span class="kpi-sub" data-kpi="counts-sub"></span>
+        </div>
+        <div class="kpi">
+          <span class="kpi-label">Latency, median</span>
+          <span class="kpi-value" data-kpi="latency">–</span>
+          <span class="kpi-sub" data-kpi="latency-sub"></span>
+        </div>
+        <div class="kpi">
+          <span class="kpi-label">Cost per run, median</span>
+          <span class="kpi-value" data-kpi="cost">–</span>
+          <span class="kpi-sub" data-kpi="cost-sub"></span>
+        </div>
+      </div>
+
+      <div class="charts">
+        <figure class="chart empty" data-chart="pass_rate">
+          <figcaption>Pass rate as runs complete</figcaption>
+          <img alt="Line chart of the cumulative pass rate over completed runs, with a band for its 95% confidence interval." />
+        </figure>
+        <figure class="chart empty" data-chart="latency">
+          <figcaption>Latency distribution</figcaption>
+          <img alt="Histogram of per-run latency with the median, 95th, and 99th percentiles marked." />
+        </figure>
+        <figure class="chart empty" data-chart="assertions">
+          <figcaption>Assertion failure rates</figcaption>
+          <img alt="Bar chart of each assertion's failure rate with its 95% confidence interval. The same numbers are in the data tables below." />
+        </figure>
+        <figure class="chart empty" data-chart="tool_paths">
+          <figcaption>Tool-call paths</figcaption>
+          <img alt="Bar chart of how many runs took each distinct sequence of tool calls. The same numbers are in the data tables below." />
+        </figure>
+        <figure class="chart empty" data-chart="cost" hidden>
+          <figcaption>Cost distribution</figcaption>
+          <img alt="Histogram of per-run cost with the median, 95th, and 99th percentiles marked." />
+        </figure>
+      </div>
+
+      <details class="runs">
+        <summary>
+          <span class="summary-title">Individual runs</span>
+          <span class="share-bar" aria-hidden="true"><span class="share-pass"></span><span class="share-fail"></span></span>
+          <span class="summary-counts muted"></span>
+        </summary>
+        <div class="runs-toolbar">
+          <span class="legend"><span class="mark pass" aria-hidden="true"></span>Passed</span>
+          <span class="legend"><span class="mark fail" aria-hidden="true"></span>Failed</span>
+          <label class="toggle"><input type="checkbox" class="failed-only" /> Failed only</label>
+          <span class="muted runs-hint">Select a run to see its full trace.</span>
+        </div>
+        <div class="run-grid" role="list"></div>
+      </details>
+
+      <details class="tables">
+        <summary><span class="summary-title">Data tables</span></summary>
+        <h3>Assertions</h3>
+        <table class="assertion-table">
+          <thead><tr><th>Assertion</th><th class="num">Failures</th><th class="num">Failure rate</th><th class="num">95% interval</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <h3>Tool-call paths</h3>
+        <table class="path-table">
+          <thead><tr><th>Path</th><th class="num">Runs</th><th class="num">Share</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </details>
+    </section>
+  </template>
 
   <script src="/static/app.js"></script>
 </body>
