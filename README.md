@@ -58,4 +58,9 @@ uv run ruff check .
 uv run mypy stochast_dashboard
 ```
 
-Depends on `stochast` through an editable path dependency (`../Stochast`) during development.
+Installs `stochast` from PyPI. To work on both projects at once, point the dashboard at a local
+checkout instead (re-run this after any `uv sync`, which restores the PyPI version):
+
+```
+uv pip install -e ../Stochast
+```

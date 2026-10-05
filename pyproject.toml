@@ -6,7 +6,7 @@ readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
 dependencies = [
-    "stochast",
+    "stochast>=0.2.0",
     "fastapi>=0.110",
     "uvicorn[standard]>=0.29",
     "matplotlib>=3.8",
@@ -21,9 +21,6 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["stochast_dashboard"]
-
-[tool.uv.sources]
-stochast = { path = "../Stochast", editable = true }
 
 [dependency-groups]
 dev = [

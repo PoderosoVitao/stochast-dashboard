@@ -1478,27 +1478,16 @@ wheels = [
 [[package]]
 name = "stochast"
 version = "0.2.0"
-source = { editable = "../Stochast" }
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
     { name = "pydantic" },
     { name = "rich" },
     { name = "typer" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "httpx", specifier = ">=0.27" },
-    { name = "pydantic", specifier = ">=2.0" },
-    { name = "rich", specifier = ">=13.0" },
-    { name = "typer", specifier = ">=0.12" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "mypy", specifier = ">=1.10" },
-    { name = "pytest", specifier = ">=8.0" },
-    { name = "ruff", specifier = ">=0.6" },
+sdist = { url = "https://files.pythonhosted.org/packages/28/3f/eab31f08354e0e1fdad50f37be28b79da522c905e5dde5762a10cc3aa0ab/stochast-0.2.0.tar.gz", hash = "sha256:c043e2b1b576f497291fe1e3e4489efb09b43ddf6431b15345f1aca7b6b9be2a", size = 65982, upload-time = "2026-10-05T07:23:46.171Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/90/7d/45ab52d78c998670f2ca0651ff83587ce8a9b6cdc3f2414e85b4c6ff4bfe/stochast-0.2.0-py3-none-any.whl", hash = "sha256:5501f9a20162636ac3e1a984144d0ed75c83df6864274e9db692cbeb71db1d97", size = 20103, upload-time = "2026-10-05T07:23:44.534Z" },
 ]
 
 [[package]]
@@ -1524,7 +1513,7 @@ dev = [
 requires-dist = [
     { name = "fastapi", specifier = ">=0.110" },
     { name = "matplotlib", specifier = ">=3.8" },
-    { name = "stochast", editable = "../Stochast" },
+    { name = "stochast", specifier = ">=0.2.0" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.29" },
 ]
 
