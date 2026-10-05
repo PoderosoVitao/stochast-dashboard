@@ -24,6 +24,8 @@ HAIRLINE = 0.75
 MAX_BARS = 8
 LABEL_LIMIT = 56
 CHAR_WIDTH = 0.011
+PERCENTILE_LINE_TOP = 0.74
+LABEL_BOX = {"facecolor": SURFACE, "edgecolor": "none", "pad": 1.5}
 
 _render_lock = threading.Lock()
 
@@ -137,8 +139,8 @@ def _distribution(values: list[float], formatter: Callable[[float], str], xlabel
         axes.set_xlim(low, high)
     marks = (("p50", summary.p50, 0.98), ("p95", summary.p95, 0.9), ("p99", summary.p99, 0.82))
     for name, value, height in marks:
-        axes.axvline(value, color=INK_MUTED, linewidth=HAIRLINE)
-        text = f" {name} {formatter(value)} "
+        axes.axvline(value, ymax=PERCENTILE_LINE_TOP, color=INK_MUTED, linewidth=HAIRLINE)
+        text = f"{name} {formatter(value)}"
         position = (value - low) / ((high - low) or 1)
         overflows = position + len(text) * CHAR_WIDTH > 0.99
         axes.text(
@@ -150,6 +152,7 @@ def _distribution(values: list[float], formatter: Callable[[float], str], xlabel
             va="top",
             color=INK_SECONDARY,
             fontsize=FONT_SIZE - 1,
+            bbox=LABEL_BOX,
         )
 
     axes.xaxis.set_major_locator(MaxNLocator(nbins=5))
@@ -209,6 +212,7 @@ def _labelled_bars(
             ha="left",
             color=INK_PRIMARY,
             fontsize=FONT_SIZE,
+            bbox=LABEL_BOX,
         )
         axes.barh(bar_y, value, height=0.32, color=SERIES)
         end = value
@@ -223,6 +227,7 @@ def _labelled_bars(
             ha="left",
             color=INK_SECONDARY,
             fontsize=FONT_SIZE - 1,
+            bbox=LABEL_BOX,
         )
 
     axes.set_ylim(len(rows) - 0.4, -0.6)
