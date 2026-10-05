@@ -25,6 +25,8 @@ const dialog = document.getElementById("run-dialog");
 const dialogTitle = document.getElementById("run-dialog-title");
 const dialogSubtitle = document.getElementById("run-dialog-subtitle");
 const dialogBody = document.getElementById("run-dialog-body");
+const themeToggle = document.getElementById("theme-toggle");
+const systemDark = window.matchMedia("(prefers-color-scheme: dark)");
 
 const cards = new Map();
 const pendingRender = new Set();
@@ -348,7 +350,8 @@ function refreshCharts(card) {
       img.src = next.src;
       figure.classList.remove("empty");
     };
-    next.src = `${scenarioUrl(card.name, `charts/${figure.dataset.chart}.svg`)}?v=${card.chartVersion}`;
+    const query = `v=${card.chartVersion}&theme=${currentTheme()}`;
+    next.src = `${scenarioUrl(card.name, `charts/${figure.dataset.chart}.svg`)}?${query}`;
   }
 }
 
@@ -546,6 +549,40 @@ async function openRun(scenario, runIndex) {
     if (token === dialogToken) dialogBody.replaceChildren(el("div", { className: "alert", text: err.message }));
   }
 }
+
+// Returns the theme on screen: the one the user picked, otherwise the OS's.
+function currentTheme() {
+  const chosen = document.documentElement.dataset.theme;
+  if (chosen === "light" || chosen === "dark") return chosen;
+  return systemDark.matches ? "dark" : "light";
+}
+
+function renderThemeToggle() {
+  const dark = currentTheme() === "dark";
+  themeToggle.querySelector(".theme-icon").textContent = dark ? "☀" : "☾";
+  themeToggle.querySelector(".theme-label").textContent = dark ? "Light" : "Dark";
+  themeToggle.setAttribute("aria-label", dark ? "Switch to light mode" : "Switch to dark mode");
+}
+
+// Re-requests every chart in the current theme: they're server-rendered
+// images, so unlike the rest of the page they can't restyle themselves.
+function rethemeCharts() {
+  renderThemeToggle();
+  for (const card of cards.values()) {
+    if (card.done > 0) refreshCharts(card);
+  }
+}
+
+themeToggle.addEventListener("click", () => {
+  const next = currentTheme() === "dark" ? "light" : "dark";
+  document.documentElement.dataset.theme = next;
+  try {
+    localStorage.setItem("stochast-theme", next);
+  } catch {}
+  rethemeCharts();
+});
+systemDark.addEventListener("change", rethemeCharts);
+renderThemeToggle();
 
 document.getElementById("run-dialog-close").addEventListener("click", () => dialog.close());
 dialog.addEventListener("click", (event) => {

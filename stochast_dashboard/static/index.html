@@ -4,12 +4,23 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Stochast Dashboard</title>
+  <script>
+    try {
+      const saved = localStorage.getItem("stochast-theme");
+      if (saved === "light" || saved === "dark") document.documentElement.dataset.theme = saved;
+    } catch {}
+  </script>
   <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
   <header class="topbar">
     <div class="brand">Stochast <span class="brand-sub">Dashboard</span></div>
-    <span id="job-status" class="status-pill idle" aria-live="polite"><span class="status-icon" aria-hidden="true"></span><span class="status-text">Idle</span></span>
+    <div class="topbar-actions">
+      <button type="button" id="theme-toggle" class="btn ghost theme-toggle" aria-label="Switch to dark mode">
+        <span class="theme-icon" aria-hidden="true">☾</span><span class="theme-label">Dark</span>
+      </button>
+      <span id="job-status" class="status-pill idle" aria-live="polite"><span class="status-icon" aria-hidden="true"></span><span class="status-text">Idle</span></span>
+    </div>
   </header>
 
   <div class="layout">
