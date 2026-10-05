@@ -112,6 +112,33 @@ async def test_preview_discovers_without_starting_a_job(tmp_path: Path):
 
 
 @pytest.mark.anyio
+async def test_completed_runs_are_kept_for_inspection(tmp_path: Path):
+    scenario_file, adapter_spec = write_fixture(tmp_path, runs=3)
+    job = JobState(out_dir=tmp_path / "out")
+
+    await job.start(scenario_file, adapter_spec, concurrency=1)
+    await wait_until_idle(job)
+
+    records = job.records("my_scenario")
+    assert sorted(r.run_index for r in records) == [0, 1, 2]
+    assert job.record("my_scenario", 1).final_output == "ok"
+
+
+@pytest.mark.anyio
+async def test_record_lookups_raise_for_unknown_scenarios_or_runs(tmp_path: Path):
+    scenario_file, adapter_spec = write_fixture(tmp_path, runs=1)
+    job = JobState(out_dir=tmp_path / "out")
+
+    await job.start(scenario_file, adapter_spec, concurrency=1)
+    await wait_until_idle(job)
+
+    with pytest.raises(KeyError):
+        job.records("no_such_scenario")
+    with pytest.raises(KeyError):
+        job.record("my_scenario", 99)
+
+
+@pytest.mark.anyio
 async def test_subscribe_replays_events_published_before_subscribing(tmp_path: Path):
     scenario_file, adapter_spec = write_fixture(tmp_path, runs=1)
     job = JobState(out_dir=tmp_path / "out")

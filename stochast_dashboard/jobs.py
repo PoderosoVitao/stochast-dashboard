@@ -30,6 +30,8 @@ class JobState:
         self._discovery_lock = asyncio.Lock()
         self._loop: asyncio.AbstractEventLoop | None = None
         self._busy = False
+        self._records: dict[str, list[RunRecord]] = {}
+        self._records_lock = threading.Lock()
 
     # Imports scenarios at `path` without starting anything, so a client can
     # preview what would run before committing.
@@ -62,6 +64,8 @@ class JobState:
             self._busy = True
             self._loop = asyncio.get_running_loop()
             self.events = []
+            with self._records_lock:
+                self._records = {s.name: [] for s in scenarios}
 
         self.publish(
             {
@@ -112,10 +116,26 @@ class JobState:
         finally:
             self._busy = False
 
+    # Returns the current job's completed runs for a scenario, in completion
+    # order. Raises KeyError for a scenario the current job doesn't include.
+    def records(self, scenario_name: str) -> list[RunRecord]:
+        with self._records_lock:
+            return list(self._records[scenario_name])
+
+    # Returns one completed run's full record. Raises KeyError if that run
+    # hasn't completed yet or doesn't exist.
+    def record(self, scenario_name: str, run_index: int) -> RunRecord:
+        for record in self.records(scenario_name):
+            if record.run_index == run_index:
+                return record
+        raise KeyError(run_index)
+
     # Builds a run_scenario callback bound to one scenario's name, so each
     # `run_completed` event says which scenario it belongs to.
     def _make_on_run_complete(self, scenario_name: str) -> Callable[[RunRecord], None]:
         def callback(record: RunRecord) -> None:
+            with self._records_lock:
+                self._records[scenario_name].append(record)
             self.publish(
                 {
                     "type": "run_completed",
