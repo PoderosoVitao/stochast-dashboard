@@ -202,3 +202,16 @@ def test_frontend_files_are_always_revalidated_so_updates_never_mix_versions():
             response = client.get(path)
             assert response.status_code == 200
             assert response.headers["cache-control"] == "no-cache"
+
+
+def test_chart_endpoint_serves_the_dark_variant(tmp_path: Path):
+    with TestClient(app_module.app) as client:
+        run_job_to_completion(client, tmp_path)
+        dark = client.get("/api/runs/current/scenarios/my_scenario/charts/latency.svg?theme=dark")
+        invalid = client.get(
+            "/api/runs/current/scenarios/my_scenario/charts/latency.svg?theme=sepia"
+        )
+
+    assert dark.status_code == 200
+    assert "#1a1a19" in dark.text
+    assert invalid.status_code == 422

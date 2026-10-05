@@ -4,7 +4,7 @@ import dataclasses
 import json
 from collections.abc import AsyncIterator, Awaitable, Callable
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, Response, StreamingResponse
@@ -125,10 +125,10 @@ def run_detail(scenario: str, run_index: int) -> Response:
 
 
 @app.get("/api/runs/current/scenarios/{scenario}/charts/{kind}.svg")
-def scenario_chart(scenario: str, kind: str) -> Response:
+def scenario_chart(scenario: str, kind: str, theme: Literal["light", "dark"] = "light") -> Response:
     records = _completed_records(scenario)
     try:
-        svg = render_chart(kind, records)
+        svg = render_chart(kind, records, theme)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="unknown chart") from exc
     return Response(svg, media_type="image/svg+xml", headers={"Cache-Control": "no-store"})

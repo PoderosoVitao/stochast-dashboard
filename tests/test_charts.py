@@ -59,3 +59,19 @@ def test_render_chart_rejects_unknown_kinds_and_empty_records():
         render_chart("pie", [make_record(0)])
     with pytest.raises(ValueError):
         render_chart("latency", [])
+
+
+@pytest.mark.parametrize("kind", CHART_KINDS)
+def test_dark_theme_renders_on_the_dark_surface(kind: str):
+    records = [make_record(i, passed=i % 2 == 0, latency_ms=100.0 + i) for i in range(12)]
+
+    svg = render_chart(kind, records, "dark")
+
+    assert b"#1a1a19" in svg
+    assert b"#0b0b0b" not in svg
+    assert b"#e1e0d9" not in svg
+
+
+def test_render_chart_rejects_an_unknown_theme():
+    with pytest.raises(KeyError):
+        render_chart("latency", [make_record(0)], "sepia")
