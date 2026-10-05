@@ -18,6 +18,25 @@ uv run stochast-dashboard
 Then open `http://127.0.0.1:8000`, fill in a scenario path and an adapter spec (same format as
 stochast's own `--adapter module:factory` or `--adapter file.py:factory`), and click Start.
 
+## What you see
+
+Each scenario gets a panel with its progress, a few headline numbers (pass rate with its 95%
+interval, passed/failed counts, median latency and cost), and charts that refresh every couple of
+seconds while the run is going:
+
+- the pass rate as runs complete, with its confidence band narrowing as data comes in
+- latency and cost distributions, with p50/p95/p99 marked
+- each assertion's failure rate, worst first
+- how often each distinct sequence of tool calls happened
+
+Below that is one mark per run: a dot for a pass, a cross for a failure. Click any of them to see
+that run's full trace, including every assertion, each tool call's arguments and result, the final
+output, and the raw conversation. Past 100 runs the marks start collapsed so a big batch doesn't
+bury the page, and a "Failed only" filter helps you find the interesting ones.
+
+The charts are rendered server-side with matplotlib. The numbers behind them are also in the
+"Data tables" section of each panel.
+
 **Security note:** an adapter spec loads and runs arbitrary local Python, just like stochast's CLI
 `--adapter` flag does. The dashboard only binds to `127.0.0.1`. Don't expose it on a network.
 
