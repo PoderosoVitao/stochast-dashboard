@@ -121,3 +121,76 @@ def test_start_run_returns_400_when_no_scenarios_match(tmp_path: Path):
         )
 
     assert response.status_code == 400
+
+
+def run_job_to_completion(client: TestClient, tmp_path: Path) -> None:
+    scenario_file, adapter_spec = write_fixture(tmp_path)
+    app_module.job.out_dir = tmp_path / "out"
+    response = client.post(
+        "/api/runs",
+        json={"path": str(scenario_file), "adapter": adapter_spec, "concurrency": 1},
+    )
+    assert response.status_code == 202
+    while app_module.job._busy:  # noqa: SLF001
+        time.sleep(0.01)
+
+
+def test_stats_endpoint_reports_the_current_runs_statistics(tmp_path: Path):
+    with TestClient(app_module.app) as client:
+        run_job_to_completion(client, tmp_path)
+        response = client.get("/api/runs/current/scenarios/my_scenario/stats")
+
+    assert response.status_code == 200
+    assert response.json()["total_runs"] == 2
+
+
+def test_run_detail_returns_the_full_record(tmp_path: Path):
+    with TestClient(app_module.app) as client:
+        run_job_to_completion(client, tmp_path)
+        response = client.get("/api/runs/current/scenarios/my_scenario/runs/1")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["run_index"] == 1
+    assert body["final_output"] == "ok"
+    assert "raw_messages" in body
+
+
+def test_run_detail_returns_404_for_a_run_that_does_not_exist(tmp_path: Path):
+    with TestClient(app_module.app) as client:
+        run_job_to_completion(client, tmp_path)
+        response = client.get("/api/runs/current/scenarios/my_scenario/runs/99")
+
+    assert response.status_code == 404
+
+
+def test_chart_endpoint_serves_svg(tmp_path: Path):
+    with TestClient(app_module.app) as client:
+        run_job_to_completion(client, tmp_path)
+        response = client.get("/api/runs/current/scenarios/my_scenario/charts/latency.svg")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "image/svg+xml"
+    assert "<svg" in response.text
+
+
+def test_chart_endpoint_returns_404_for_an_unknown_chart(tmp_path: Path):
+    with TestClient(app_module.app) as client:
+        run_job_to_completion(client, tmp_path)
+        response = client.get("/api/runs/current/scenarios/my_scenario/charts/pie.svg")
+
+    assert response.status_code == 404
+
+
+def test_scenario_endpoints_return_404_for_an_unknown_scenario(tmp_path: Path):
+    with TestClient(app_module.app) as client:
+        run_job_to_completion(client, tmp_path)
+        response = client.get("/api/runs/current/scenarios/nope/stats")
+
+    assert response.status_code == 404
+
+
+def test_sse_serialization_tolerates_non_json_tool_results():
+    event = {"type": "scenario_finished", "result": object()}
+
+    assert app_module._format_sse(event).startswith("data: ")  # noqa: SLF001
