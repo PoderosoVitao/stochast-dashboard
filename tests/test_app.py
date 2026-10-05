@@ -194,3 +194,11 @@ def test_sse_serialization_tolerates_non_json_tool_results():
     event = {"type": "scenario_finished", "result": object()}
 
     assert app_module._format_sse(event).startswith("data: ")  # noqa: SLF001
+
+
+def test_frontend_files_are_always_revalidated_so_updates_never_mix_versions():
+    with TestClient(app_module.app) as client:
+        for path in ("/", "/static/app.js", "/static/style.css"):
+            response = client.get(path)
+            assert response.status_code == 200
+            assert response.headers["cache-control"] == "no-cache"

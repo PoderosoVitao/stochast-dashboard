@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 import json
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
 from pathlib import Path
 from typing import Any
 
@@ -33,6 +33,19 @@ class StartRunRequest(BaseModel):
 
 class PreviewRequest(BaseModel):
     path: str
+
+
+# Makes browsers revalidate the page and its scripts on every load. Without
+# this they guess a cache lifetime, and after an update can pair new HTML
+# with a stale app.js that no longer matches it.
+@app.middleware("http")
+async def revalidate_frontend(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
+    response = await call_next(request)
+    if request.url.path == "/" or request.url.path.startswith("/static/"):
+        response.headers["Cache-Control"] = "no-cache"
+    return response
 
 
 @app.get("/")
